@@ -1,0 +1,301 @@
+[gd_scene load_steps=8 format=2]
+
+[ext_resource path="res://background.png" type="Texture" id=1]
+[ext_resource path="res://icons/0.png" type="Texture" id=2]
+[ext_resource path="res://restartBTN.png" type="Texture" id=3]
+[ext_resource path="res://SwipeDetector.gd" type="Script" id=4]
+[ext_resource path="res://ariblk.tres" type="DynamicFont" id=5]
+
+[sub_resource type="GDScript" id=1]
+script/source = "extends Node2D
+
+
+onready var bg = get_node(\"Background\")
+onready var sc_lbl = get_node(\"Score\")
+onready var hsc_lbl = get_node(\"HighScore\")
+
+func _process(delta):
+	bg.score=0
+	for i in bg.cellValues.size():
+		if bg.cellValues[i]!=0:
+			bg.score+=(pow(2,bg.cellValues[i]))
+	if bg.score>bg.highScore:
+		bg.highScore=bg.score
+	
+	sc_lbl.text=String(bg.score)
+	hsc_lbl.text=String(bg.highScore)
+"
+
+[sub_resource type="GDScript" id=2]
+script/source = "extends Sprite
+
+func _ready():
+	settings.show_ad_banner()
+	new_game()
+
+func new_game():
+	settings.show_ad_interstitial()
+	score=0
+	cells = get_children()
+	cellValues = []
+	for i in cells.size():
+		cellValues.append(0)
+	rand_cell()
+	updateTextures()
+	#settings.show_ad_interstitial()
+
+
+var isReady = true
+
+var cellValues
+var cells
+
+var highScore=0
+var score=0
+
+func _process(delta):
+	if isReady:
+		if Input.is_action_just_pressed(\"left\"):
+			move(0)
+		if Input.is_action_just_pressed(\"right\"):
+			move(1)
+		if Input.is_action_just_pressed(\"up\"):
+			move(2)
+		if Input.is_action_just_pressed(\"down\"):
+			move(3)
+
+func move(dir):#HARDCODED STUFF
+	if dir==0:#left
+		for x in range(0,4,1):
+			for y in 4:
+				var tx = x
+				for ix in range(tx-1,-1,-1):
+						if cellValues[tx+y*4]!=0&&cellValues[ix+y*4]!=0&&cellValues[tx+y*4]==cellValues[ix+y*4]:
+							cellValues[tx+y*4]=0
+							cellValues[ix+y*4]+=1
+							tx-=1
+						elif cellValues[ix+y*4]==0&&cellValues[tx+y*4]!=0:
+							cellValues[ix+y*4]=cellValues[tx+y*4]
+							cellValues[tx+y*4]=0
+							tx-=1
+						else:
+							break
+	elif dir==1:#right
+		for x in range(3,-1,-1):
+			for y in 4:
+				var tx = x
+				for ix in range(tx+1,4,1):
+						if cellValues[tx+y*4]!=0&&cellValues[ix+y*4]!=0&&cellValues[tx+y*4]==cellValues[ix+y*4]:
+							cellValues[tx+y*4]=0
+							cellValues[ix+y*4]+=1
+							tx+=1
+						elif cellValues[ix+y*4]==0&&cellValues[tx+y*4]!=0:
+							cellValues[ix+y*4]=cellValues[tx+y*4]
+							cellValues[tx+y*4]=0
+							tx+=1
+						else:
+							break
+	elif dir==2:#up
+		for y in range(0,4,1):
+			for x in 4:
+				var ty = y
+				for iy in range(ty-1,-1,-1):
+						if cellValues[x+ty*4]!=0&&cellValues[x+iy*4]!=0&&cellValues[x+ty*4]==cellValues[x+iy*4]:
+							cellValues[x+ty*4]=0
+							cellValues[x+iy*4]+=1
+							ty-=1
+						elif cellValues[x+iy*4]==0&&cellValues[x+ty*4]!=0:
+							cellValues[x+iy*4]=cellValues[x+ty*4]
+							cellValues[x+ty*4]=0
+							ty-=1
+						else:
+							break
+	elif dir==3:#down
+		for y in range(3,-1,-1):
+			for x in 4:
+				var ty = y
+				for iy in range(ty+1,4,1):
+						if cellValues[x+ty*4]!=0&&cellValues[x+iy*4]!=0&&cellValues[x+ty*4]==cellValues[x+iy*4]:
+							cellValues[x+ty*4]=0
+							cellValues[x+iy*4]+=1
+							ty+=1
+						elif cellValues[x+iy*4]==0&&cellValues[x+ty*4]!=0:
+							cellValues[x+iy*4]=cellValues[x+ty*4]
+							cellValues[x+ty*4]=0
+							ty+=1
+						else:
+							break
+	else:
+		print(\"Heyhey... Fuck you!\")
+	
+	if free_cell():
+		rand_cell()
+	updateTextures()
+
+func free_cell():
+	for i in cells.size():
+		if cellValues[i]==0:
+			return true
+	return false
+
+func rand_cell():
+	var bRand = true
+	var rndm = RandomNumberGenerator.new()
+	rndm.randomize()
+	while(bRand):
+		var rand = rndm.randi_range(0,cells.size()-1)
+		if cellValues[rand]==0:
+			cellValues[rand]=rndm.randi_range(1,2)
+			bRand=false
+
+func updateTextures():
+	for i in cells.size():
+		cells[i].set_texture(textures[cellValues[i]])
+
+var textures = [load(\"res://icons/0.png\"),load(\"res://icons/1.png\"),load(\"res://icons/2.png\"),load(\"res://icons/3.png\"),
+load(\"res://icons/4.png\"),load(\"res://icons/5.png\"),load(\"res://icons/6.png\"),load(\"res://icons/7.png\"),
+load(\"res://icons/8.png\"),load(\"res://icons/9.png\"),load(\"res://icons/10.png\"),load(\"res://icons/11.png\"),
+load(\"res://icons/12.png\"),load(\"res://icons/13.png\"),load(\"res://icons/14.png\"),load(\"res://icons/15.png\"),
+load(\"res://icons/16.png\"),load(\"res://icons/17.png\")]
+
+func _on_Button_up():
+	new_game()
+
+func _on_SwipeDetector_swiped(direction):
+	if direction.x==1:
+		move(0)
+	elif direction.x==-1:
+		move(1)
+	elif direction.y==1:
+		move(2)
+	elif direction.y==-1:
+		move(3)
+
+
+
+
+
+"
+
+[node name="2048" type="Node2D"]
+script = SubResource( 1 )
+
+[node name="Background" type="Sprite" parent="."]
+texture = ExtResource( 1 )
+offset = Vector2( 720, 1280 )
+script = SubResource( 2 )
+
+[node name="0" type="Sprite" parent="Background"]
+position = Vector2( 154.517, 698 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="1" type="Sprite" parent="Background"]
+position = Vector2( 430, 690 )
+texture = ExtResource( 2 )
+offset = Vector2( 146, 141 )
+
+[node name="2" type="Sprite" parent="Background"]
+position = Vector2( 734, 698 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="3" type="Sprite" parent="Background"]
+position = Vector2( 1025, 698 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="4" type="Sprite" parent="Background"]
+position = Vector2( 152, 997 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="5" type="Sprite" parent="Background"]
+position = Vector2( 443, 997 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="6" type="Sprite" parent="Background"]
+position = Vector2( 734, 997 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="7" type="Sprite" parent="Background"]
+position = Vector2( 1025, 997 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="8" type="Sprite" parent="Background"]
+position = Vector2( 152, 1297 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="9" type="Sprite" parent="Background"]
+position = Vector2( 443, 1297 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="10" type="Sprite" parent="Background"]
+position = Vector2( 734, 1294.48 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="11" type="Sprite" parent="Background"]
+position = Vector2( 1025, 1297 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="12" type="Sprite" parent="Background"]
+position = Vector2( 152, 1596 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="13" type="Sprite" parent="Background"]
+position = Vector2( 443, 1596 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="14" type="Sprite" parent="Background"]
+position = Vector2( 734, 1596 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="15" type="Sprite" parent="Background"]
+position = Vector2( 1025, 1596 )
+texture = ExtResource( 2 )
+offset = Vector2( 133, 133 )
+
+[node name="TextureButton" type="TextureButton" parent="."]
+margin_left = 153.569
+margin_top = 448.12
+margin_right = 420.569
+margin_bottom = 594.12
+texture_normal = ExtResource( 3 )
+
+[node name="SwipeDetector" type="Node" parent="."]
+script = ExtResource( 4 )
+
+[node name="Timer" type="Timer" parent="SwipeDetector"]
+wait_time = 0.5
+one_shot = true
+
+[node name="Score" type="Label" parent="."]
+margin_left = 766.0
+margin_top = 58.0
+margin_right = 1050.0
+margin_bottom = 146.0
+custom_fonts/font = ExtResource( 5 )
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+valign = 1
+
+[node name="HighScore" type="Label" parent="."]
+margin_left = 1100.0
+margin_top = 58.0
+margin_right = 1384.0
+margin_bottom = 146.0
+custom_fonts/font = ExtResource( 5 )
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+valign = 1
+[connection signal="button_up" from="TextureButton" to="Background" method="_on_Button_up"]
+[connection signal="swiped" from="SwipeDetector" to="Background" method="_on_SwipeDetector_swiped"]
+[connection signal="timeout" from="SwipeDetector/Timer" to="SwipeDetector" method="_on_Timer_timeout"]
